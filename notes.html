@@ -1,0 +1,99 @@
+<html>
+<head>
+<title>PPP in PHP (November 2, 2007) Release Notes</title>
+</head>
+
+<body>
+
+<h1>PPP in PHP (November 2, 2007)</h1>
+<p>An implementation of the PPP CryptoSystem designed by Steve Gibson of GRC<br />
+Full details and spec can be found at <a href="http://www.grc.com/ppp">http://www.grc.com/ppp</a></p>
+<p>Implementation in PHP by <a href="http://www.bobsomers.com">Bob Somers</a><br />
+Tested on PHP version 5.2.3</p>
+
+<h2>Requirements:</h2>
+<ul>
+<li>PHP5, preferably 5.2.3 or higher (that's what I tested with)</li>
+<li>The <a href="http://www.php.net/manual/en/function.hash.php">hash()</a> function must support the SHA256 hash. You can check this with the <a href="http://www.php.net/manual/en/function.hash-algos.php">hash_algos()</a> function.</li>
+<li>The <a href="http://www.php.net/manual/en/ref.bc.php">bcmath extension</a> for dealing with numbers of arbitrary size.</li>
+<li>The <a href="http://www.php.net/manual/en/ref.mcrypt.php">mcrypt extension</a> (built against libmcrypt > 2.4.x) for 128-bit Rijndael.</li>
+</ul>
+
+<h2>Important:</h2>
+<p>This is not a complete authentication system, it's merely a library that implements the important PPP
+functionality. It's stil up to you to work this into your authentication system in a meaningful way.
+Keep checking my website (<a href="http://www.bobsomers.com">bobsomers.com</a>) though because I'm working on some samples of how to integrate
+this into a complete authentication system. Those samples will be packaged with this library for the next
+release.</p>
+
+<h2>A Note About bcmath:</h2>
+<p>You'll notice that certain functions require the numbers you pass to be "arbitrary-length decimal strings".
+All that means is that numbers that are larger than the maxmium value of a 32-bit signed integer should be
+passed as a string. If you use the bcmath functions to calculate these numbers than you're dealing with
+arbitrary-length decimal strings already. As long as the value is below the 32-bit signed integer limit,
+however, you can just pass the integer value itself and PHP will handle the type conversion automatically.</p>
+	
+<h2>Performance:</h2>
+<p>On my system, which runs an Intel E6750 Core 2 Duo (2.66 Ghz) I can generate and verify roughly 3000 passcodes
+per second (from the same sequence key). Keep in mind that this implementation is far more computationally
+expensive than a much slimmer implementation, in say, C, since numbers have to be manipulated as binary or
+hex strings using substring extractions instead of bit shifting. This is due to the fact that PHP only stores
+integers in 32-bit signed notation (at noted above). However, it's not computationally prohibitive, and as
+long as you're running it on a decently powered machine (for those who require heavy usage) you'll be just fine.</p>
+	
+<h2>Function Documentation:</h2>
+<h3>GenerateSequenceKeyFromString($passphrase)</h3>
+<ul>
+<li>$passphrase is a string, like "zombie"</li>
+<li>returns a hex string that contains your 256-bit sequence key</li>
+<p>Please note that using this method to generate your sequence keys is not recommended, as it is not as secure
+as generating a unique, random key for each person and saving that.</p>
+<h4>EXAMPLE USAGE:</h4>
+<pre>$key = GenerateSequenceKeyFromString("zombie");
+echo "The key is $key\n";</pre>
+<h4>EXAMPLE OUTPUT:</h4>
+<pre>The key is 49460b7bbbd3aad3f2cba09864f5e8b01a220ea8c077e9fa996de367e7984af0</pre>
+</ul>
+
+<h3>GenerateRandomSequenceKey()</h3>
+<ul>
+<li>returns a hex string that contains your 256-bit sequence key</li>
+<p>Hashes a combination of your system's hostname details, the PHP script memory usage, a list of your installed
+PHP extensions, and several samplings of the system microtime to generate a random sequence key.</p>
+<h4>EXAMPLE USAGE:</h4>
+<pre>$key = GenerateRandomSequenceKey();
+echo "The key is $key\n";</pre>
+<h4>EXAMPLE OUTPUT: (Yours will be different!)</h4>
+<pre>The key is 8566a0b989e04c63746b17836dd1325b8fb7c1cc9fb61e6338c9528939311c69</pre>
+</ul>
+			
+<h3>RetrievePasscodes($first, $count, $sequence_key)</h3>
+<ul>
+<li>$first is number of the first passcode you'd like to get, note that passcodes are numbered starting at 0</li>
+<li>$count is how many passcodes you'd like returned</li>
+<li>both $first and $count should be passed as arbitrary-length decimal strings if they are larger than the 32-bit signed integer limit</li>
+<li>$sequence_key is a hex string containing the sequence key that should be used to generate the passcodes</li>
+<li>returns an array (zero-based) of $count passcodes, in order</li>
+<p>This will hand back an array of passcodes starting with a particular numbered passcode in the sequence. Keep
+in mind that the passcode number is a decimal number, like "passcode 59", not the number as seen on a passcard,
+like "3A on passcard 2".</p>
+<h4>EXAMPLE USAGE:</h4>
+<pre>// i'm using a string here so that the example output will match yours
+// in the real world, you would want to use GenerateRandomSequenceKey() instead
+$key = GenerateSequenceKeyFromString("zombie");
+$passcodes = RetrievePasscodes(0, 8, $key); // get the first 8 passcodes
+print_r($passcodes);</pre>
+<h4>EXAMPLE OUTPUT:</h4>
+<pre>Array
+(
+	[0] => 8N=3
+	[1] => 7ucE
+	[2] => aAg3
+	[3] => zVv#
+	[4] => y2Fm
+	[5] => nGc8
+	[6] => Vad=
+	[7] => #V5p
+)</pre>
+</body>
+</html>
